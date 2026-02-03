@@ -1,0 +1,27 @@
+{
+  "name": "contract-processor",
+  "version": "1.0.0",
+  "description": "合同数据处理与HTML报表生成系统",
+  "main": "dist/native.template.js",
+  "scripts": {
+    "demo": "node examples/demo.js",
+    "test": "node examples/test.js",
+    "generate": "node scripts/generate.js",
+    "execute": "node dist/native.template.js execute"
+  },
+  "keywords": [
+    "contract",
+    "data-processing",
+    "report",
+    "html",
+    "csv",
+    "excel"
+  ],
+  "author": "Contract Processor",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

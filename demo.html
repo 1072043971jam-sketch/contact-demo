@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>合同处理系统 - 可视化演示</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #fff;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 10px; font-size: 28px; }
+    .subtitle { text-align: center; color: #8892b0; margin-bottom: 30px; }
+
+    /* 控制面板 */
+    .control-panel {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .control-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+    .control-group { display: flex; align-items: center; gap: 8px; }
+    label { font-size: 14px; color: #ccd6f6; }
+
+    /* 自定义下拉菜单 */
+    .custom-dropdown { position: relative; }
+    .dropdown-trigger {
+      padding: 8px 30px 8px 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      background: rgba(45, 55, 72, 0.9);
+      color: #e2e8f0;
+      font-size: 14px;
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+    }
+    .dropdown-trigger:hover { background: rgba(45, 55, 72, 1); }
+    .dropdown-trigger::after {
+      content: '▼';
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      color: #a0aec0;
+    }
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 5px);
+      left: 0;
+      right: 0;
+      background: #2d3748;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      z-index: 1000;
+      max-height: 200px;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .dropdown-item {
+      padding: 10px 12px;
+      color: #e2e8f0;
+      cursor: pointer;
+      transition: background 0.15s;
+      font-size: 14px;
+    }
+    .dropdown-item:hover { background: #4a5568; color: #fff; }
+    .dropdown-item.selected { background: #667eea; color: #fff; }
+    select, input {
+      padding: 8px 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 14px;
+    }
+    select:focus, input:focus { outline: none; border-color: #667eea; }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102,126,234,0.4); }
+    .btn-success { background: #28a745; color: #fff; }
+    .btn-info { background: #17a2b8; color: #fff; }
+    .btn-warning { background: #ffc107; color: #000; }
+
+    /* 统计卡片 */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .stat-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .stat-label { font-size: 12px; color: #8892b0; margin-bottom: 8px; }
+    .stat-value { font-size: 28px; font-weight: 600; }
+    .stat-value.highlight { color: #667eea; }
+
+    /* 表格 */
+    .table-container {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: rgba(255,255,255,0.1); }
+    th { padding: 15px; text-align: left; font-weight: 600; font-size: 13px; color: #ccd6f6; text-transform: uppercase; }
+    td { padding: 15px; border-top: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
+    tbody tr:hover { background: rgba(255,255,255,0.05); }
+    tbody tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+
+    /* 状态标签 */
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status-active { background: #d4edda; color: #155724; }
+    .status-expired { background: #f8d7da; color: #721c24; }
+    .status-draft { background: #fff3cd; color: #856404; }
+    .status-terminated { background: #e2e3e5; color: #383d41; }
+
+    /* 分页 */
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 10px; padding: 20px; }
+    .page-btn {
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .page-btn:hover:not(:disabled) { background: rgba(255,255,255,0.2); }
+    .page-btn.active { background: #667eea; border-color: #667eea; }
+    .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* 代码展示 */
+    .code-panel {
+      background: #0d1117;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .code-title { font-size: 14px; color: #ccd6f6; }
+    .code-content {
+      background: rgba(0,0,0,0.3);
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Consolas', monospace;
+      font-size: 13px;
+      color: #c9d1d9;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* 日志 */
+    .log-panel {
+      background: #0d1117;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .log-entry {
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-family: 'Consolas', monospace;
+      font-size: 13px;
+    }
+    .log-time { color: #8892b0; margin-right: 10px; }
+    .log-info { color: #58a6ff; }
+    .log-success { color: #3fb950; }
+    .log-error { color: #f85149; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 合同处理系统 - 可视化演示</h1>
+    <p class="subtitle">在浏览器中测试所有功能，无需安装任何依赖</p>
+
+    <!-- 控制面板 -->
+    <div class="control-panel">
+      <div class="control-row">
+        <div class="control-group">
+          <label>状态筛选:</label>
+          <div class="custom-dropdown" style="width: 120px;">
+            <div class="dropdown-trigger" id="statusTrigger" onclick="toggleDropdown('status')">全部</div>
+            <div class="dropdown-menu" id="statusMenu" style="display: none;">
+              <div class="dropdown-item" data-value="">全部</div>
+              <div class="dropdown-item" data-value="active">生效中</div>
+              <div class="dropdown-item" data-value="expired">已过期</div>
+              <div class="dropdown-item" data-value="draft">草稿</div>
+              <div class="dropdown-item" data-value="terminated">已终止</div>
+            </div>
+            <input type="hidden" id="statusFilter" value="">
+          </div>
+        </div>
+        <div class="control-group">
+          <label>类型筛选:</label>
+          <div class="custom-dropdown" style="width: 120px;">
+            <div class="dropdown-trigger" id="typeTrigger" onclick="toggleDropdown('type')">全部</div>
+            <div class="dropdown-menu" id="typeMenu" style="display: none;">
+              <div class="dropdown-item" data-value="">全部</div>
+              <div class="dropdown-item" data-value="采购合同">采购合同</div>
+              <div class="dropdown-item" data-value="销售合同">销售合同</div>
+              <div class="dropdown-item" data-value="服务合同">服务合同</div>
+              <div class="dropdown-item" data-value="租赁合同">租赁合同</div>
+              <div class="dropdown-item" data-value="劳务合同">劳务合同</div>
+            </div>
+            <input type="hidden" id="typeFilter" value="">
+          </div>
+        </div>
+        <div class="control-group">
+          <label>搜索:</label>
+          <input type="text" id="searchInput" placeholder="合同名称/编号..." style="width: 200px;">
+        </div>
+        <button class="btn-primary" onclick="applyFilters()">🔍 搜索</button>
+        <button class="btn-success" onclick="exportHTML()">📄 导出HTML</button>
+        <button class="btn-success" onclick="exportCSV()">📊 导出CSV</button>
+        <button class="btn-info" onclick="showGeneratedScript()">📜 生成脚本</button>
+        <button class="btn-warning" onclick="resetData()">🔄 重置数据</button>
+      </div>
+    </div>
+
+    <!-- 统计 -->
+    <div class="stats" id="stats"></div>
+
+    <!-- 表格 -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>合同编号</th>
+            <th>合同名称</th>
+            <th>类型</th>
+            <th>金额</th>
+            <th>对方单位</th>
+            <th>状态</th>
+            <th>开始日期</th>
+            <th>结束日期</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 分页 -->
+    <div class="pagination" id="pagination"></div>
+
+    <!-- 生成的脚本 -->
+    <div class="code-panel" id="scriptPanel" style="display: none;">
+      <div class="code-header">
+        <span class="code-title">📜 生成的 Native.js 脚本</span>
+        <button onclick="copyScript()" class="btn-primary">复制</button>
+      </div>
+      <div class="code-content" id="scriptContent"></div>
+    </div>
+
+    <!-- Native.js 数据检测 -->
+    <div class="code-panel">
+      <div class="code-header">
+        <span class="code-title">🔍 Native.js 模块检测</span>
+        <div>
+          <button onclick="testFetchAll()" class="btn-primary">测试获取数据</button>
+          <button onclick="testUpdate()" class="btn-warning">测试更新数据</button>
+        </div>
+      </div>
+      <div style="margin: 15px 0;">
+        <label style="color: #8892b0; font-size: 13px; display: block; margin-bottom: 10px;">筛选条件:</label>
+        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+          <div class="control-group">
+            <label>状态:</label>
+            <div class="custom-dropdown" style="width: 120px;">
+              <div class="dropdown-trigger" id="testStatusTrigger" onclick="toggleDropdown('testStatus')">全部</div>
+              <div class="dropdown-menu" id="testStatusMenu" style="display: none;">
+                <div class="dropdown-item" data-value="">全部</div>
+                <div class="dropdown-item" data-value="active">生效中</div>
+                <div class="dropdown-item" data-value="expired">已过期</div>
+                <div class="dropdown-item" data-value="draft">草稿</div>
+              </div>
+              <input type="hidden" id="testStatusFilter" value="">
+            </div>
+          </div>
+          <div class="control-group">
+            <label>类型:</label>
+            <div class="custom-dropdown" style="width: 120px;">
+              <div class="dropdown-trigger" id="testTypeTrigger" onclick="toggleDropdown('testType')">全部</div>
+              <div class="dropdown-menu" id="testTypeMenu" style="display: none;">
+                <div class="dropdown-item" data-value="">全部</div>
+                <div class="dropdown-item" data-value="采购合同">采购合同</div>
+                <div class="dropdown-item" data-value="销售合同">销售合同</div>
+                <div class="dropdown-item" data-value="服务合同">服务合同</div>
+                <div class="dropdown-item" data-value="租赁合同">租赁合同</div>
+                <div class="dropdown-item" data-value="劳务合同">劳务合同</div>
+              </div>
+              <input type="hidden" id="testTypeFilter" value="">
+            </div>
+          </div>
+          <div class="control-group">
+            <label>最大金额:</label>
+            <input type="number" id="testMaxAmount" placeholder="如: 100000" style="width: 110px; background: #2d3748; color: #e2e8f0; border: 1px solid #4a5568;">
+          </div>
+          <button onclick="testFetchFilterSimple()" class="btn-primary" style="padding: 8px 16px;">按条件查询</button>
+        </div>
+      </div>
+      <div class="code-content" id="testResult" style="max-height: 300px; white-space: pre-wrap; font-size: 13px; line-height: 1.6;">
+💡 点击上方按钮测试 Native.js 模块功能
+
+测试说明：
+• "测试获取数据" - 显示前3条合同数据
+• "按条件查询" - 根据上方筛选条件查询
+• "测试更新数据" - 随机更新一条数据并显示变化
+      </div>
+    </div>
+
+    <!-- 操作日志 -->
+    <div class="log-panel">
+      <div class="code-header"><span class="code-title">📋 操作日志</span></div>
+      <div id="logContent"></div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== 模拟数据源 ====================
+    class MockDataSource {
+      constructor() {
+        this._contracts = this._generateData(50);
+      }
+
+      _generateData(count) {
+        const data = [];
+        const statuses = ['draft', 'active', 'expired', 'terminated'];
+        const types = ['采购合同', '销售合同', '服务合同', '租赁合同', '劳务合同'];
+        const companies = ['科技股份公司', '贸易集团', '实业控股', '网络技术', '咨询服务'];
+
+        for (let i = 1; i <= count; i++) {
+          const startDate = new Date(2023 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1);
+          const endDate = new Date(startDate);
+          endDate.setFullYear(endDate.getFullYear() + 1);
+
+          data.push({
+            id: `CT${String(i).padStart(4, '0')}`,
+            contractNumber: `HT${new Date().getFullYear()}${String(i).padStart(5, '0')}`,
+            name: `${companies[i % companies.length]}${types[i % types.length]}`,
+            type: types[i % types.length],
+            amount: Math.floor(Math.random() * 900000) + 10000,
+            currency: 'CNY',
+            status: statuses[i % statuses.length],
+            counterparty: `合作方${String(i).padStart(2, '0')}`,
+            startDate: startDate.toISOString().split('T')[0],
+            endDate: endDate.toISOString().split('T')[0],
+            createdAt: startDate.toISOString(),
+            updatedAt: new Date().toISOString(),
+            fields: {
+              department: ['采购部', '销售部', '行政部'][i % 3],
+              responsible: `负责人${String(i).padStart(2, '0')}`,
+              paymentTerms: ['月结', '季结', '年结'][i % 3]
+            }
+          });
+        }
+        return data;
+      }
+
+      async getContracts(filters = {}) {
+        await delay(50);
+        let contracts = [...this._contracts];
+
+        if (filters.status) contracts = contracts.filter(c => c.status === filters.status);
+        if (filters.type) contracts = contracts.filter(c => c.type === filters.type);
+        if (filters.counterparty) contracts = contracts.filter(c => c.counterparty === filters.counterparty);
+        if (filters.minAmount !== undefined) contracts = contracts.filter(c => c.amount >= filters.minAmount);
+        if (filters.maxAmount !== undefined) contracts = contracts.filter(c => c.amount <= filters.maxAmount);
+        if (filters.keyword) {
+          const kw = filters.keyword.toLowerCase();
+          contracts = contracts.filter(c =>
+            c.name.toLowerCase().includes(kw) || c.contractNumber.toLowerCase().includes(kw)
+          );
+        }
+
+        return contracts;
+      }
+
+      async updateContract(id, fields) {
+        const index = this._contracts.findIndex(c => c.id === id);
+        if (index !== -1) {
+          Object.assign(this._contracts[index], fields, { updatedAt: new Date().toISOString() });
+          return this._contracts[index];
+        }
+        throw new Error('Contract not found');
+      }
+
+      reset() {
+        this._contracts = this._generateData(50);
+      }
+    }
+
+    // ==================== HTML 生成器 ====================
+    class HTMLGenerator {
+      generateTable(data, columns, options = {}) {
+        const { title = '合同数据报表', subtitle = '' } = options;
+
+        return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${this._escape(title)}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.5; color: #333; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 24px 32px; }
+    .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+    .header .subtitle { font-size: 14px; opacity: 0.9; }
+    .summary { display: flex; gap: 24px; padding: 20px 32px; background: #f8f9fa; border-bottom: 1px solid #e9ecef; }
+    .summary-item { flex: 1; }
+    .summary-label { font-size: 12px; color: #6c757d; margin-bottom: 4px; }
+    .summary-value { font-size: 20px; font-weight: 600; color: #333; }
+    .table-container { padding: 24px 32px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #f8f9fa; }
+    th { padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; border-bottom: 2px solid #dee2e6; }
+    td { padding: 12px 16px; border-bottom: 1px solid #e9ecef; }
+    tbody tr:nth-child(even) { background: #f8f9fa; }
+    tbody tr:hover { background: #f1f3f5; }
+    .status-active { background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 12px; font-size: 12px; }
+    .status-expired { background: #f8d7da; color: #721c24; padding: 4px 12px; border-radius: 12px; font-size: 12px; }
+    .status-draft { background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 12px; font-size: 12px; }
+    .footer { padding: 16px 32px; background: #f8f9fa; border-top: 1px solid #e9ecef; font-size: 12px; color: #6c757d; text-align: center; }
+    @media print { body { background: #fff; padding: 0; } .container { box-shadow: none; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>${this._escape(title)}</h1>
+      ${subtitle ? `<p class="subtitle">${this._escape(subtitle)}</p>` : ''}
+    </div>
+    ${this._generateSummary(data)}
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            ${columns.map(c => `<th>${this._escape(c.label || c.field)}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(row => `
+          <tr>
+            ${columns.map(c => `<td>${this._formatCell(row, c)}</td>`).join('')}
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="footer">
+      生成时间: ${new Date().toLocaleString('zh-CN')}
+    </div>
+  </div>
+</body>
+</html>`;
+      }
+
+      _generateSummary(data) {
+        if (!data.length) return '';
+        const totalAmount = data.reduce((sum, r) => sum + (r.amount || 0), 0);
+        const statusCount = data.reduce((acc, r) => { acc[r.status] = (acc[r.status] || 0) + 1; return acc; }, {});
+        return `
+    <div class="summary">
+      <div class="summary-item"><div class="summary-label">总记录数</div><div class="summary-value">${data.length}</div></div>
+      <div class="summary-item"><div class="summary-label">总金额</div><div class="summary-value">¥${totalAmount.toLocaleString()}</div></div>
+      <div class="summary-item"><div class="summary-label">生效中</div><div class="summary-value">${statusCount.active || 0}</div></div>
+      <div class="summary-item"><div class="summary-label">已过期</div><div class="summary-value">${statusCount.expired || 0}</div></div>
+    </div>`;
+      }
+
+      _formatCell(row, column) {
+        const value = this._getValue(row, column.field);
+        if (value === null || value === undefined) return '-';
+        switch (column.type) {
+          case 'currency':
+            const num = parseFloat(value);
+            return isNaN(num) ? '-' : new Intl.NumberFormat('zh-CN', { style: 'currency', currency: column.currency || 'CNY' }).format(num);
+          case 'date':
+            const d = new Date(value);
+            return isNaN(d.getTime()) ? value : d.toISOString().split('T')[0];
+          case 'status':
+            const statusMap = { 'active': '生效中', 'expired': '已过期', 'draft': '草稿', 'terminated': '已终止' };
+            return `<span class="status-${value}">${statusMap[value] || value}</span>`;
+          default:
+            return this._escape(String(value));
+        }
+      }
+
+      _getValue(obj, path) {
+        const keys = path.split('.');
+        let value = obj;
+        for (const key of keys) {
+          if (value && typeof value === 'object') value = value[key];
+          else return '';
+        }
+        return value !== undefined ? value : '';
+      }
+
+      _escape(str) {
+        return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+      }
+    }
+
+    // ==================== 初始化 ====================
+    const dataSource = new MockDataSource();
+    const htmlGenerator = new HTMLGenerator();
+    let filteredData = [];
+    let currentPage = 1;
+    const pageSize = 10;
+
+    function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    function log(message, type = 'info') {
+      const logContent = document.getElementById('logContent');
+      const time = new Date().toLocaleTimeString();
+      const className = `log-${type}`;
+      logContent.innerHTML = `<div class="log-entry"><span class="log-time">[${time}]</span><span class="${className}">${message}</span></div>` + logContent.innerHTML;
+    }
+
+    // ==================== 加载数据 ====================
+    async function loadData() {
+      log('开始加载数据...');
+      const status = document.getElementById('statusFilter').value;
+      const type = document.getElementById('typeFilter').value;
+      const keyword = document.getElementById('searchInput').value;
+
+      const filters = {};
+      if (status) filters.status = status;
+      if (type) filters.type = type;
+      if (keyword) filters.keyword = keyword;
+
+      filteredData = await dataSource.getContracts(filters);
+      currentPage = 1;
+
+      log(`加载完成，共 ${filteredData.length} 条数据`, 'success');
+      renderTable();
+      renderStats();
+      renderPagination();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredData.slice(start, end);
+
+      if (pageData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:#8892b0;">暂无数据</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = pageData.map(row => `
+        <tr>
+          <td>${row.id}</td>
+          <td>${row.contractNumber}</td>
+          <td>${row.name}</td>
+          <td>${row.type}</td>
+          <td>${new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(row.amount)}</td>
+          <td>${row.counterparty}</td>
+          <td><span class="status-badge status-${row.status}">${{active:'生效中',expired:'已过期',draft:'草稿',terminated:'已终止'}[row.status]||row.status}</span></td>
+          <td>${row.startDate}</td>
+          <td>${row.endDate}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderStats() {
+      const totalAmount = filteredData.reduce((sum, r) => sum + (r.amount || 0), 0);
+      const statusCount = filteredData.reduce((acc, r) => { acc[r.status] = (acc[r.status] || 0) + 1; return acc; }, {});
+
+      document.getElementById('stats').innerHTML = `
+        <div class="stat-card">
+          <div class="stat-label">总记录数</div>
+          <div class="stat-value">${filteredData.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">总金额</div>
+          <div class="stat-value highlight">¥${totalAmount.toLocaleString()}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">生效中</div>
+          <div class="stat-value">${statusCount.active || 0}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">已过期</div>
+          <div class="stat-value">${statusCount.expired || 0}</div>
+        </div>
+      `;
+    }
+
+    function renderPagination() {
+      const totalPages = Math.ceil(filteredData.length / pageSize);
+      const pagination = document.getElementById('pagination');
+
+      let buttons = `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="goToPage(${currentPage - 1})">上一页</button>`;
+
+      for (let i = 1; i <= totalPages; i++) {
+        buttons += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+      }
+
+      buttons += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="goToPage(${currentPage + 1})">下一页</button>`;
+
+      pagination.innerHTML = buttons;
+    }
+
+    function goToPage(page) {
+      const totalPages = Math.ceil(filteredData.length / pageSize);
+      if (page < 1 || page > totalPages) return;
+      currentPage = page;
+      renderTable();
+      renderPagination();
+    }
+
+    function applyFilters() {
+      loadData();
+    }
+
+    // ==================== 导出报表 ====================
+    function exportHTML() {
+      log('开始生成 HTML 报表...');
+
+      const columns = [
+        { field: 'id', label: 'ID' },
+        { field: 'contractNumber', label: '合同编号' },
+        { field: 'name', label: '合同名称' },
+        { field: 'type', label: '类型' },
+        { field: 'amount', label: '金额', type: 'currency' },
+        { field: 'counterparty', label: '对方单位' },
+        { field: 'status', label: '状态', type: 'status' },
+        { field: 'startDate', label: '开始日期', type: 'date' },
+        { field: 'endDate', label: '结束日期', type: 'date' }
+      ];
+
+      const html = htmlGenerator.generateTable(filteredData, columns, {
+        title: '合同数据报表',
+        subtitle: '生成时间: ' + new Date().toLocaleString('zh-CN')
+      });
+
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `contract-report-${new Date().toISOString().split('T')[0]}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      log('HTML 报表导出成功！', 'success');
+    }
+
+    function exportCSV() {
+      log('开始生成 CSV 报表...');
+
+      const csv = generateCSV(filteredData);
+
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `contract-data-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      log('CSV 报表导出成功！', 'success');
+    }
+
+    function generateCSV(data) {
+      const escapeCSV = (str) => {
+        if (str === null || str === undefined) return '';
+        const s = String(str);
+        if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+          return `"${s.replace(/"/g, '""')}"`;
+        }
+        return s;
+      };
+
+      const statusMap = { 'active': '生效中', 'expired': '已过期', 'draft': '草稿', 'terminated': '已终止' };
+
+      // 表头
+      const headers = ['ID', '合同编号', '合同名称', '类型', '金额', '对方单位', '状态', '开始日期', '结束日期'];
+      let csv = headers.map(escapeCSV).join(',') + '\n';
+
+      // 数据行
+      for (const row of data) {
+        const values = [
+          row.id,
+          row.contractNumber,
+          row.name,
+          row.type,
+          row.amount,
+          row.counterparty,
+          statusMap[row.status] || row.status,
+          row.startDate,
+          row.endDate
+        ].map(escapeCSV);
+        csv += values.join(',') + '\n';
+      }
+
+      return csv;
+    }
+
+    // 兼容旧的函数名
+    const exportData = exportHTML;
+
+    // ==================== 生成脚本 ====================
+    function showGeneratedScript() {
+      const script = `// 合同处理脚本 - 自动生成
+// 配置
+const USER_CONFIG = {
+  export: {
+    title: '合同数据报表',
+    columns: [
+      { field: 'contractNumber', label: '合同编号' },
+      { field: 'name', label: '合同名称' },
+      { field: 'amount', label: '金额', type: 'currency' }
+    ]
+  }
+};
+
+// 使用方法
+// 1. 修改 USER_CONFIG 配置
+// 2. 运行: node native.template.js execute
+
+module.exports = { USER_CONFIG };`;
+
+      document.getElementById('scriptContent').textContent = script;
+      document.getElementById('scriptPanel').style.display = 'block';
+      log('已生成 native.js 脚本模板', 'success');
+    }
+
+    function copyScript() {
+      const script = document.getElementById('scriptContent').textContent;
+      navigator.clipboard.writeText(script);
+      log('脚本已复制到剪贴板', 'success');
+    }
+
+    function resetData() {
+      dataSource.reset();
+      log('数据已重置', 'success');
+      loadData();
+    }
+
+    // ==================== Native.js 测试函数（简化版）====================
+    // 状态映射表
+    const statusMap = {
+      'active': '生效中',
+      'expired': '已过期',
+      'draft': '草稿',
+      'terminated': '已终止'
+    };
+
+    // 获取中文状态
+    function getStatusText(status) {
+      return statusMap[status] || status;
+    }
+
+    // 当前显示的数据（用于展开/折叠）
+    let currentTestContracts = [];
+    let isExpanded = false;
+
+    // 渲染测试结果
+    function renderTestResult(contracts, showAll = false) {
+      const resultEl = document.getElementById('testResult');
+      if (!resultEl) return;
+
+      currentTestContracts = contracts;
+      isExpanded = showAll;
+
+      const displayCount = showAll ? contracts.length : Math.min(3, contracts.length);
+
+      let output = `✅ 测试通过！\n\n`;
+      output += `📊 测试函数: getContracts()\n`;
+      output += `📦 获取数据: ${contracts.length} 条合同\n`;
+      output += `⏱️ 响应时间: < 100ms\n\n`;
+      output += `📋 数据列表（${showAll ? '全部' : '前' + displayCount + '条'}）:\n`;
+      output += `${'─'.repeat(50)}\n`;
+
+      for (let i = 0; i < displayCount; i++) {
+        const c = contracts[i];
+        output += `\n[${i + 1}] ${c.name}\n`;
+        output += `    编号: ${c.contractNumber}\n`;
+        output += `    类型: ${c.type}\n`;
+        output += `    金额: ¥${c.amount.toLocaleString()}\n`;
+        output += `    状态: ${getStatusText(c.status)}\n`;
+      }
+
+      output += `\n\n${'='.repeat(50)}\n`;
+      output += `⚙️ 操作按钮：\n`;
+
+      if (!showAll) {
+        output += `📖 显示 ${displayCount}/${contracts.length} 条`;
+        output += `\n\n<button onclick="expandTestData()" style="background: #667eea; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; margin-top: 10px;">📂 展开全部 (${contracts.length} 条)</button>`;
+      } else {
+        output += `📖 显示全部 ${contracts.length} 条`;
+        output += `\n\n<button onclick="collapseTestData()" style="background: #4a5568; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; margin-top: 10px;">📁 收起（显示前3条）</button>`;
+      }
+
+      resultEl.innerHTML = output;
+    }
+
+    function expandTestData() {
+      renderTestResult(currentTestContracts, true);
+    }
+
+    function collapseTestData() {
+      renderTestResult(currentTestContracts, false);
+    }
+
+    async function testFetchAll() {
+      const resultEl = document.getElementById('testResult');
+      if (!resultEl) return;
+
+      resultEl.textContent = '正在测试...';
+
+      try {
+        const contracts = await dataSource.getContracts({});
+        renderTestResult(contracts, false);
+        log(`测试成功: 获取 ${contracts.length} 条数据`, 'success');
+      } catch (error) {
+        resultEl.textContent = `❌ 测试失败\n\n错误: ${error.message}`;
+        log(`测试失败: ${error.message}`, 'error');
+      }
+    }
+
+    async function testFetchFilterSimple() {
+      const resultEl = document.getElementById('testResult');
+      if (!resultEl) return;
+
+      resultEl.textContent = '正在测试...';
+
+      try {
+        const status = document.getElementById('testStatusFilter')?.value;
+        const type = document.getElementById('testTypeFilter')?.value;
+        const maxAmount = document.getElementById('testMaxAmount')?.value;
+
+        const filters = {};
+        if (status) filters.status = status;
+        if (type) filters.type = type;
+        if (maxAmount) filters.maxAmount = Number(maxAmount);
+
+        const contracts = await dataSource.getContracts(filters);
+
+        // 使用 renderTestResult 来支持展开/折叠功能
+        renderTestResult(contracts, false);
+        log(`筛选成功: ${contracts.length} 条数据`, 'success');
+      } catch (error) {
+        resultEl.textContent = `❌ 测试失败\n\n错误: ${error.message}`;
+        log(`测试失败: ${error.message}`, 'error');
+      }
+    }
+
+    // 简化版的 testUpdate
+    async function testUpdate() {
+      const resultEl = document.getElementById('testResult');
+      if (!resultEl) return;
+
+      resultEl.textContent = '正在测试更新功能...';
+
+      try {
+        const allContracts = await dataSource.getContracts({});
+        const randomContract = allContracts[Math.floor(Math.random() * Math.min(10, allContracts.length))];
+
+        const oldAmount = randomContract.amount;
+        const newAmount = Math.floor(oldAmount * 1.1);
+        const oldStatus = randomContract.status;
+
+        const updates = { status: 'active', amount: newAmount };
+        const updated = await dataSource.updateContract(randomContract.id, updates);
+
+        let output = `✅ 更新测试通过！\n\n`;
+        output += `📊 测试函数: updateContract(id, fields)\n\n`;
+        output += `📝 更新的合同: ${randomContract.id}\n`;
+        output += `${'─'.repeat(50)}\n\n`;
+        output += `更新前:\n`;
+        output += `    金额: ¥${oldAmount.toLocaleString()}\n`;
+        output += `    状态: ${getStatusText(oldStatus)}\n\n`;
+        output += `更新后:\n`;
+        output += `    金额: ¥${newAmount.toLocaleString()} (增加 10%)\n`;
+        output += `    状态: ${getStatusText('active')}\n\n`;
+        output += `⏰ 更新时间: ${new Date(updated.updatedAt).toLocaleString('zh-CN')}\n`;
+        output += `\n✅ 数据已保存，上方表格会自动刷新`;
+
+        resultEl.textContent = output;
+        log(`更新成功: 合同 ${randomContract.id}`, 'success');
+        loadData();
+      } catch (error) {
+        resultEl.textContent = `❌ 测试失败\n\n错误: ${error.message}`;
+        log(`测试失败: ${error.message}`, 'error');
+      }
+    }
+
+    // ==================== 初始化 ====================
+
+    // 自定义下拉菜单功能
+    let openDropdown = null;
+
+    function toggleDropdown(id) {
+      const menu = document.getElementById(id + 'Menu');
+      const trigger = document.getElementById(id + 'Trigger');
+
+      // 关闭其他打开的下拉菜单
+      if (openDropdown && openDropdown !== menu) {
+        openDropdown.style.display = 'none';
+      }
+
+      if (menu.style.display === 'none') {
+        menu.style.display = 'block';
+        openDropdown = menu;
+      } else {
+        menu.style.display = 'none';
+        openDropdown = null;
+      }
+    }
+
+    // 初始化下拉菜单项点击事件
+    function initDropdowns() {
+      // 主控制面板 - 状态下拉菜单
+      const statusItems = document.querySelectorAll('#statusMenu .dropdown-item');
+      statusItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const value = this.dataset.value;
+          const text = this.textContent;
+          document.getElementById('statusFilter').value = value;
+          document.getElementById('statusTrigger').textContent = text;
+          document.getElementById('statusMenu').style.display = 'none';
+          openDropdown = null;
+          // 自动应用筛选
+          applyFilters();
+        });
+      });
+
+      // 主控制面板 - 类型下拉菜单
+      const typeItems = document.querySelectorAll('#typeMenu .dropdown-item');
+      typeItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const value = this.dataset.value;
+          const text = this.textContent;
+          document.getElementById('typeFilter').value = value;
+          document.getElementById('typeTrigger').textContent = text;
+          document.getElementById('typeMenu').style.display = 'none';
+          openDropdown = null;
+          // 自动应用筛选
+          applyFilters();
+        });
+      });
+
+      // 测试面板 - 状态下拉菜单
+      const testStatusItems = document.querySelectorAll('#testStatusMenu .dropdown-item');
+      testStatusItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const value = this.dataset.value;
+          const text = this.textContent;
+          document.getElementById('testStatusFilter').value = value;
+          document.getElementById('testStatusTrigger').textContent = text;
+          document.getElementById('testStatusMenu').style.display = 'none';
+          openDropdown = null;
+        });
+      });
+
+      // 测试面板 - 类型下拉菜单
+      const testTypeItems = document.querySelectorAll('#testTypeMenu .dropdown-item');
+      testTypeItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const value = this.dataset.value;
+          const text = this.textContent;
+          document.getElementById('testTypeFilter').value = value;
+          document.getElementById('testTypeTrigger').textContent = text;
+          document.getElementById('testTypeMenu').style.display = 'none';
+          openDropdown = null;
+        });
+      });
+
+      // 点击外部关闭下拉菜单
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.custom-dropdown')) {
+          if (openDropdown) {
+            openDropdown.style.display = 'none';
+            openDropdown = null;
+          }
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initDropdowns();
+
+      // 搜索回车支持
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.addEventListener('keyup', (e) => {
+          if (e.key === 'Enter') applyFilters();
+        });
+      }
+
+      log('系统初始化完成');
+      log('提示：可以使用筛选和搜索功能', 'info');
+      loadData();
+    });
+  </script>
+</body>
+</html>
